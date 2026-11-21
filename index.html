@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FollowUp Pro</title>
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th {
+  background: #1e3a8a;
+  color: white;
+  padding: 12px;
+  text-align: left;
+}
+
+td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+  #liste > div {
+  background: white;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-left: 5px solid #2563eb;
+}
+
+#liste h3 {
+  color: #1e3a8a;
+  margin-top: 0;
+}
+.client {
+  background: white;
+  padding: 20px;
+  margin: 18px 0;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-left: 5px solid #2563eb;
+}  
+  <style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  background: #f1f5f9;
+  color: #172554;
+}
+
+header {
+  background: #0f172a;
+  color: white;
+  padding: 25px 20px;
+  border-radius: 16px;
+  margin-bottom: 25px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+h2 {
+  color: #1e3a8a;
+}
+
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 9px;
+  font-size: 15px;
+  cursor: pointer;
+  margin: 5px 3px;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font-size: 15px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+th {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.stat {
+  background: white;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  text-align: center;
+}
+
+.stat .label {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.stat .number {
+  color: #2563eb;
+  font-size: 26px;
+  font-weight: bold;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>FollowUp Pro</h1>
+  <p>Suivez vos clients et n'oubliez plus vos rappels.</p>
+</header>
+<main>
+  <section class="cards" aria-label="Tableau de bord">
+    <div class="stat"><div class="label">Total clients</div><div class="number" id="totalClients">0</div></div>
+    <div class="stat"><div class="label">À contacter aujourd'hui</div><div class="number" id="todayCount">0</div></div>
+    <div class="stat"><div class="label">Suivis en attente</div><div class="number" id="pendingCount">0</div></div>
+    <div class="stat"><div class="label">Suivis terminés</div><div class="number" id="completedCount">0</div></div>
+  </section>
+
+  <section class="card">
+    <h2 id="formTitle">Ajouter un client</h2>
+    <form id="clientForm">
+      <div class="formgrid">
+        <div class="field"><label for="nom">Nom du client *</label><input id="nom" required autocomplete="name" placeholder="Nom complet"></div>
+        <div class="field"><label for="telephone">Téléphone</label><input id="telephone" type="tel" autocomplete="tel" placeholder="Numéro de téléphone"></div>
+        <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="Adresse email"></div>
+        <div class="field"><label for="dateRappel">Date du prochain contact</label><input id="dateRappel" type="date"></div>
+        <div class="field full"><label for="statut">État du suivi</label>
+          <select id="statut"><option value="pending">En attente</option><option value="completed">Terminé</option></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="primary" type="submit" id="saveButton">Ajouter le client</button>
+        <button class="secondary" type="button" id="cancelButton" hidden>Annuler la modification</button>
+      </div>
+    </form>
+    <p class="notice">Les clients sont conservés dans le stockage local de ce navigateur sur cet appareil.</p>
+  </section>
+
+  <section class="card">
+    <h2>Liste des clients</h2>
+    <div id="liste"><p class="empty">Chargement des clients…</p></div>
+  </section>
+</main>
+<script>
+  // IMPORTANT : conserver cette clé pour retrouver les clients déjà enregistrés.
+  const CLE_STOCKAGE = "followup_clients";
+  let clients = [];
+  let indexModification = -1;
+
+  const $ = (id) => document.getElementById(id);
+  const today = () => {
+    const d = new Date();
+    const offset = d.getTimezoneOffset();
+    return new Date(d.getTime() - offset * 60000).toISOString().slice(0, 10);
+  };
+
+  function chargerClients() {
+    try {
+      const saved = localStorage.getItem(CLE_STOCKAGE);
+      const parsed = saved ? JSON.parse(saved) : [];
+      clients = Array.isArray(parsed) ? parsed : [];
+      // Ajouter les nouveaux champs aux anciens clients sans effacer leurs informations.
+      clients = clients.map(client => ({
+        ...client,
+        dateRappel: client.dateRappel || client.date_rappel || "",
+        statutSuivi: client.statutSuivi || client.statut || "pending"
+      }));
+    } catch (e) {
+      clients = [];
+    }
+    afficherClients();
+  }
+
+  function sauvegarderClients() {
+    localStorage.setItem(CLE_STOCKAGE, JSON.stringify(clients));
+  }
+
+  function formatDate(value) {
+    if (!value) return "Aucune date prévue";
+    const parts = value.split("-");
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+  }
+
+  function mettreAJourCartes() {
+    const dateAujourdhui = today();
+    const total = clients.length;
+    const termines = clients.filter(c => c.statutSuivi === "completed").length;
+    const enAttente = clients.filter(c => c.statutSuivi !== "completed" && c.dateRappel).length;
+    const aContacter = clients.filter(c => c.statutSuivi !== "completed" && c.dateRappel && c.dateRappel <= dateAujourdhui).length;
+    $("totalClients").textContent = total;
+    $("todayCount").textContent = aContacter;
+    $("pendingCount").textContent = enAttente;
+    $("completedCount").textContent = termines;
+  }
+
+  function afficherClients() {
+    mettreAJourCartes();
+    const liste = $("liste");
+    liste.innerHTML = "";
+    if (!clients.length) {
+      liste.innerHTML = '<p class="empty">Aucun client pour le moment. Ajoutez votre premier client ci-dessus.</p>';
+      return;
+    }
+    clients.forEach((client, index) => {
+      const article = document.createElement("article");
+      article.className = "client";
+      const nom = client.nom || "Client sans nom";
+      const tel = client.telephone || client.tel || "";
+      const email = client.email || "";
+      const date = client.dateRappel || client.date_rappel || "";
+      const done = client.statutSuivi === "completed";
+      article.innerHTML = `
+        <div class="clienttop">
+          <div><h3></h3><div class="details"></div></div>
+          <span class="pill ${done ? "completed" : ""}">${done ? "Suivi terminé" : "En attente"}</span>
+        </div>
+        <div class="details dateDetails"></div>
+        <div class="actions">
+          <button type="button" class="secondary edit">Modifier</button>
+          <button type="button" class="done toggle">${done ? "Remettre en attente" : "Marquer terminé"}</button>
+          <button type="button" class="delete remove">Supprimer</button>
+        </div>`;
+      article.querySelector("h3").textContent = nom;
+      const details = article.querySelector(".clienttop .details");
+      details.textContent = [tel, email].filter(Boolean).join(" • ") || "Aucun téléphone ni email";
+      article.querySelector(".dateDetails").textContent = "Prochain contact : " + formatDate(date);
+      article.querySelector(".edit").addEventListener("click", () => modifierClient(index));
+      article.querySelector(".toggle").addEventListener("click", () => basculerStatut(index));
+      article.querySelector(".remove").addEventListener("click", () => supprimerClient(index));
+      liste.appendChild(article);
+    });
+  }
+
+  function viderFormulaire() {
+    $("clientForm").reset();
+    indexModification = -1;
+    $("formTitle").textContent = "Ajouter un client";
+    $("saveButton").textContent = "Ajouter le client";
+    $("cancelButton").hidden = true;
+  }
+
+  $("clientForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+    const client = {
+      nom: $("nom").value.trim(),
+      telephone: $("telephone").value.trim(),
+      email: $("email").value.trim(),
+      dateRappel: $("dateRappel").value,
+      statutSuivi: $("statut").value
+    };
+    if (!client.nom) {
+      $("nom").focus();
+      return;
+    }
+    if (indexModification === -1) {
+      clients.push(client);
+    } else {
+      // Garder les éventuels champs supplémentaires du client déjà enregistré.
+      clients[indexModification] = { ...clients[indexModification], ...client };
+    }
+    sauvegarderClients();
+    afficherClients();
+    viderFormulaire();
+  });
+
+  function modifierClient(index) {
+    const client = clients[index];
+    $("nom").value = client.nom || "";
+    $("telephone").value = client.telephone || client.tel || "";
+    $("email").value = client.email || "";
+    $("dateRappel").value = client.dateRappel || client.date_rappel || "";
+    $("statut").value = client.statutSuivi === "completed" ? "completed" : "pending";
+    indexModification = index;
+    $("formTitle").textContent = "Modifier le client";
+    $("saveButton").textContent = "Enregistrer les changements";
+    $("cancelButton").hidden = false;
+    $("nom").focus();
+    window.scrollTo({top: 0, behavior: "smooth"});
+  }
+
+  function basculerStatut(index) {
+    clients[index].statutSuivi = clients[index].statutSuivi === "completed" ? "pending" : "completed";
+    sauvegarderClients();
+    afficherClients();
+  }
+
+  function supprimerClient(index) {
+    if (!confirm("Voulez-vous vraiment supprimer ce client ?")) return;
+    clients.splice(index, 1);
+    sauvegarderClients();
+    afficherClients();
+    if (indexModification === index) viderFormulaire();
+  }
+
+  $("cancelButton").addEventListener("click", viderFormulaire);
+  chargerClients();
+function exporterClients() {
+  const donnees = localStorage.getItem("followup_clients");
+
+  if (!donnees) {
+    alert("Aucun client à sauvegarder.");
+    return;
+  }
+
+  const zone = document.getElementById("zoneSauvegarde");
+  zone.value = donnees;
+  zone.style.display = "block";
+  zone.focus();
+  zone.select();
+
+  alert("Données affichées. Tu peux les copier.");
+}
+function importerClients(event) {
+  const fichier = event.target.files[0];
+
+  if (!fichier) return;
+
+  const lecteur = new FileReader();
+
+  lecteur.onload = function() {
+    try {
+      const clients = JSON.parse(lecteur.result);
+
+      if (!Array.isArray(clients)) {
+        alert("Le fichier ne contient pas une liste de clients.");
+        return;
+      }
+
+      const confirmer = confirm(
+        "Importer ces clients remplacera la liste actuelle. Continuer ?"
+      );
+
+      if (!confirmer) return;
+
+      localStorage.setItem(
+        "followup_clients",
+        JSON.stringify(clients)
+      );
+
+      alert("Importation réussie ! Le tableau va se recharger.");
+      location.reload();
+
+    } catch (erreur) {
+      alert("Le fichier JSON est invalide.");
+    }
+  };
+
+  lecteur.readAsText(fichier);
+}
+function importerDepuisTexte() {
+  const texte = document.getElementById("zoneImportation").value.trim();
+
+  if (!texte) {
+    alert("Colle d'abord les données de tes clients.");
+    return;
+  }
+
+  try {
+    const clients = JSON.parse(texte);
+
+    if (!Array.isArray(clients)) {
+      alert("Les données ne sont pas valides.");
+      return;
+    }
+
+    if (!confirm("Remplacer la liste actuelle par ces clients ?")) {
+      return;
+    }
+
+    localStorage.setItem("followup_clients", JSON.stringify(clients));
+
+    alert("Clients restaurés avec succès !");
+    location.reload();
+
+  } catch (erreur) {
+    alert("Erreur : les données copiées ne sont pas valides.");
+  }
+}
+</script>
+<button onclick="exporterClients()">
+  Exporter mes clients
+</button>
+
+<textarea
+  id="zoneSauvegarde"
+  style="display:none;width:100%;height:300px;"
+></textarea>
+<button onclick="document.getElementById('fichierImport').click()">
+  Importer mes clients
+</button>
+
+<input
+  type="file"
+  id="fichierImport"
+  accept=".json,application/json"
+  style="display:none"
+  onchange="importerClients(event)"
+  >
+<h3>Récupérer mes clients</h3>
+
+<textarea
+  id="zoneImportation"
+  placeholder="Colle ici les données JSON de tes clients"
+  style="width:100%;height:180px;"
+></textarea>
+
+<button onclick="importerDepuisTexte()">
+  Restaurer mes clients
+</button>
+</body>
+</html>
